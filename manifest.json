@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "jorge.futebol-scores",
+  "name": "Futebol Scores",
+  "version": "1.0.0",
+  "author": "jorgewillian",
+  "license": "MIT",
+  "description": "Placares de futebol na barra do Omarchy: ligas europeias, brasileiras e internacionais, com alertas opcionais.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Futebol",
+    "description": "Placar ao vivo e contagem para o próximo jogo das ligas de futebol que você segue.",
+    "category": "Sports",
+    "aliases": [
+      "futebol",
+      "soccer",
+      "scores",
+      "football",
+      "placar"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "followedTeams": "",
+      "followedLeagues": "eng.1,esp.1,ger.1,ita.1,fra.1,bra.1,mls,mex.1,ned.1",
+      "livePollSec": 25,
+      "idlePollSec": 900,
+      "barFormat": "full",
+      "rotateSec": 6,
+      "showSituation": false,
+      "showAllGames": false,
+      "finalWindowHours": 8,
+      "notifyStart": true,
+      "notifyScore": true,
+      "notifyFinal": false,
+      "notifyClose": false,
+      "notifyLeagues": true,
+      "closeMargin": 1,
+      "closeClockSec": 300,
+      "providerChain": "",
+      "espnHost": ""
+    },
+    "schema": [
+      {
+        "key": "followedTeams",
+        "type": "string",
+        "label": "Times seguidos",
+        "description": "Ex: eng.1:ARS, bra.1:FLA",
+        "defaultValue": ""
+      },
+      {
+        "key": "followedLeagues",
+        "type": "string",
+        "label": "Ligas seguidas",
+        "description": "Ex: eng.1, esp.1, bra.1",
+        "defaultValue": ""
+      },
+      {
+        "key": "livePollSec",
+        "type": "integer",
+        "label": "Atualização ao vivo (segundos)",
+        "min": 10,
+        "max": 300,
+        "step": 5,
+        "defaultValue": 25
+      },
+      {
+        "key": "idlePollSec",
+        "type": "integer",
+        "label": "Atualização ociosa (segundos)",
+        "min": 60,
+        "max": 7200,
+        "step": 60,
+        "defaultValue": 900
+      },
+      {
+        "key": "notifyStart",
+        "type": "boolean",
+        "label": "Avisar no apito inicial",
+        "defaultValue": true
+      },
+      {
+        "key": "notifyScore",
+        "type": "boolean",
+        "label": "Avisar a cada gol",
+        "defaultValue": true
+      },
+      {
+        "key": "notifyLeagues",
+        "type": "boolean",
+        "label": "Avisar para ligas seguidas",
+        "defaultValue": true
+      }
+    ]
+  }
+}
