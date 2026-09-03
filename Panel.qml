@@ -79,7 +79,8 @@ Panel {
     teams: service.teams,
     teamsLoading: service.teamsLoading,
     leagueCounts: leagueCounts,
-    formatTime: service.formatTime
+    formatTime: service.formatTime,
+    dateOffset: service.dateOffset
   }) : []
 
   readonly property var leagueCounts: {
@@ -296,6 +297,14 @@ Panel {
       if (row.action === "refresh") { if (service) service.refresh(); return }
       if (row.action === "leagues") { pushRoute("leagues"); return }
       if (row.action === "search") { startFiltering(true); return }
+      if (String(row.action).indexOf("date:") === 0) {
+        var days = parseInt(String(row.action).slice(5), 10)
+        if (!isFinite(days) || !service) return
+        service.setDateOffset(days)
+        route = ""
+        cursorIndex = 0
+        return
+      }
       if (row.action === "open") {
         var game = currentGame()
         if (game) service.openUrl(game.detailUrl)
@@ -392,7 +401,10 @@ Panel {
 
   function shiftDate(days) {
     if (!service) return
-    service.setDateOffset(service.dateOffset + days)
+    var next = service.dateOffset + days
+    if (next > 14) next = 14
+    if (next < -7) next = -7
+    service.setDateOffset(next)
     route = ""
     cursorIndex = 0
   }
@@ -643,6 +655,51 @@ Panel {
             }
           }
 
+          Row {
+            id: dateNav
+            visible: root.route === "" && !root.filtering
+            width: parent.width
+            spacing: Style.space(8)
+
+            PanelActionButton {
+              iconText: "‹"
+              tooltipText: "Previous day ([)"
+              foreground: root.foreground
+              hoverColor: root.accent
+              fontFamily: root.fontFamily
+              bordered: true
+              onClicked: root.shiftDate(-1)
+            }
+
+            Text {
+              anchors.verticalCenter: parent.verticalCenter
+              width: Math.max(Style.space(120), parent.width - Style.space(140))
+              horizontalAlignment: Text.AlignHCenter
+              text: root.dateTitle
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+
+              MouseArea {
+                anchors.fill: parent
+                enabled: root.service && root.service.dateOffset !== 0
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.shiftDate(-(root.service ? root.service.dateOffset : 0))
+              }
+            }
+
+            PanelActionButton {
+              iconText: "›"
+              tooltipText: "Next day (])"
+              foreground: root.foreground
+              hoverColor: root.accent
+              fontFamily: root.fontFamily
+              bordered: true
+              onClicked: root.shiftDate(1)
+            }
+          }
+
           TextField {
             id: filterField
             visible: root.filtering
@@ -734,7 +791,7 @@ Panel {
     if (route === "leagues") return "f follow league  ·  x unfollow  ·  l open  ·  h back"
     if (route.indexOf("standings:") === 0) return "enter or f follow  ·  x unfollow  ·  h back"
     if (route.indexOf("league:") === 0) return "enter follow  ·  x unfollow  ·  o web  ·  h back"
-    return "l detail  ·  f follow  ·  x unfollow  ·  / search  ·  [ ] day"
+    return "l detail  ·  f follow  ·  x unfollow  ·  [ ] day  ·  t today"
   }
 
   // ------------------------------------------------------------- delegates
