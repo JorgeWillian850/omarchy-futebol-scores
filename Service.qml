@@ -940,8 +940,12 @@ Item {
   }
 
   function setDateOffset(days) {
-    if (root.dateOffset === days) return
-    root.dateOffset = days
+    var n = parseInt(String(days), 10)
+    if (!isFinite(n)) n = 0
+    if (n > 14) n = 14
+    if (n < -7) n = -7
+    if (root.dateOffset === n) return
+    root.dateOffset = n
     // Only the browsed set is discarded. Today's games stay exactly as they
     // are, so the bar does not blink, resize, or shove the rest of the bar
     // sideways every time you page a day.

@@ -630,7 +630,26 @@ function todayRows(state, set, nowMs, formatTime, filter, games, leagues) {
     if (state.loading) rows.push(note("Loading…", "loading"))
     else if (filter !== "") rows.push(note("Nothing matches “" + state.filter + "”", "nomatch"))
     else if (nothingFollowed) rows.push(note("Nothing followed yet. Start here:", "nofollows"))
+    else if ((state.dateOffset || 0) !== 0)
+      rows.push(note("Nothing you follow is playing that day", "nogames"))
     else rows.push(note("Nothing you follow is playing today", "nogames"))
+  }
+
+  var offset = state.dateOffset || 0
+  var upcoming = [
+    section("Upcoming", ""),
+    { kind: "action", key: "action:date:+1", selectable: true, action: "date:+1",
+      label: "Tomorrow's games", hint: "]" },
+    { kind: "action", key: "action:date:+2", selectable: true, action: "date:+2",
+      label: "In two days", hint: "" },
+    { kind: "action", key: "action:date:+3", selectable: true, action: "date:+3",
+      label: "In three days", hint: "" }
+  ]
+  if (offset !== 0) {
+    upcoming.splice(1, 0, {
+      kind: "action", key: "action:date:0", selectable: true, action: "date:0",
+      label: "Back to today", hint: "t"
+    })
   }
 
   // Adding a team is a listed action, not only a keybind. A fresh install
@@ -640,18 +659,13 @@ function todayRows(state, set, nowMs, formatTime, filter, games, leagues) {
     section("Follow", ""),
     { kind: "action", key: "action:refresh", selectable: true, action: "refresh",
       label: "Refresh scores", hint: "r" },
-    // Search covers teams and leagues both, so this is one action. Browsing
-    // the league list stays as its own row because it answers a different
-    // question — "what is there?" rather than "where is this?".
     { kind: "action", key: "action:search", selectable: true, action: "search",
       label: "Add a team or league", hint: "/" },
     { kind: "action", key: "action:leagues", selectable: true, action: "leagues",
       label: "Browse all leagues", hint: "L" }
   ]
 
-  // Always last. On a fresh install the only row above them is the note that
-  // points at them, so they still read as the next step.
-  return rows.concat(follow)
+  return rows.concat(upcoming).concat(follow)
 }
 
 function displayLeague(slug) {
