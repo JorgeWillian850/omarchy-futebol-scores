@@ -154,8 +154,8 @@ var leagueList = M.buildRows({ route: "leagues", games: [], follows: [], now: no
 eq("every catalogued league is listed",
    leagueList.filter(function(r) { return r.kind === "league" }).length,
    L.browseList().length)
-check("racing series are among them",
-      leagueList.some(function(r) { return r.kind === "league" && r.league === "indycar" }))
+check("soccer leagues are among them",
+      leagueList.some(function(r) { return r.kind === "league" && r.league === "bra.1" }))
 
 var detail = M.buildRows({ route: "game:" + live.id, games: mlb, follows: follows, now: now,
   summary: { scoringPlays: [{text:"HR", teamAbbr:live.home.abbr, home:1, away:0}], leaders: [] } })
@@ -187,9 +187,9 @@ var leagueRows = M.buildRows({ route: "", games: mlb, follows: [], followedLeagu
 check("league follow makes games yours", leagueRows.some(function(r) { return r.kind === "game" && r.followed }))
 check("but not by team", !leagueRows.some(function(r) { return r.kind === "game" && r.followedByTeam }))
 
-var list = M.buildRows({ route: "leagues", games: [], follows: [], followedLeagues: ["nfl"], now: now })
-var nfl = list.filter(function(r) { return r.kind === "league" && r.league === "nfl" })[0]
-check("followed league is marked in the list", nfl && nfl.followed === true)
+var list = M.buildRows({ route: "leagues", games: [], follows: [], followedLeagues: ["eng.1"], now: now })
+var premier = list.filter(function(r) { return r.kind === "league" && r.league === "eng.1" })[0]
+check("followed league is marked in the list", premier && premier.followed === true)
 
 console.log("\n=== follow is not a toggle ===")
 eq("adding twice is idempotent", M.addFollow(M.addFollow([], "mlb", "BOS"), "mlb", "bos").length, 1)
@@ -339,9 +339,9 @@ check("and shows it is already followed", byLeagueName.filter(function(r) { retu
 var byTeamName = runSearch("arsenal")
 check("teams still match", byTeamName.some(function(r) { return r.kind === "team" && r.abbr === "ARS" }))
 
-var bySport = runSearch("baseball")
-console.log("  \"baseball\" ->", bySport.filter(function(r) { return r.kind === "league" }).map(function(r) { return r.label }).join(", "))
-check("searching a sport finds its leagues", bySport.some(function(r) { return r.kind === "league" && r.league === "mlb" }))
+var bySport = runSearch("futebol")
+console.log("  \"futebol\" ->", bySport.filter(function(r) { return r.kind === "league" }).map(function(r) { return r.label }).join(", "))
+check("searching a sport finds its leagues", bySport.some(function(r) { return r.kind === "league" && r.league === "bra.1" }))
 
 var empty = M.buildRows({ route: "search", games: [], follows: [], followedLeagues: [], now: now, teams: TEAMS, filter: "" })
 check("an empty query with nothing followed explains itself",

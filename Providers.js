@@ -127,11 +127,23 @@ function espnTeam(competitor) {
 
 // Normalized situation. `kind` picks the formatter; every field beyond it is
 // optional and the formatter must tolerate its absence.
+function espnSituationKind(situation, sport) {
+  if (sport === "baseball" || sport === "football") return sport
+  // Catalog may not know the league (fixtures still pass "mlb"); infer from
+  // fields ESPN only sends for that sport so parseScoreboard stays useful.
+  if (situation && (situation.outs !== undefined || situation.balls !== undefined ||
+      situation.onFirst !== undefined || situation.onSecond !== undefined))
+    return "baseball"
+  if (situation && (situation.downDistanceText || situation.isRedZone !== undefined))
+    return "football"
+  return sport === "other" || !sport ? "generic" : "generic"
+}
+
 function espnSituation(situation, sport) {
   if (!situation) return null
   var lastPlay = situation.lastPlay || null
   var out = {
-    kind: sport === "baseball" ? "baseball" : (sport === "football" ? "football" : "generic"),
+    kind: espnSituationKind(situation, sport),
     lastPlayId: lastPlay ? String(lastPlay.id || "") : "",
     lastPlayText: lastPlay ? String(lastPlay.text || "") : ""
   }
@@ -298,7 +310,7 @@ var espn = {
     var data = parseJson(text)
     if (!data) return { ok: false, games: [], error: "unparseable response" }
     var meta = Leagues && Leagues.resolve(league)
-    var sport = espnSportOf(meta ? meta.espn : "")
+    var sport = espnSportOf(meta && meta.espn ? meta.espn : "")
     var events = Array.isArray(data.events) ? data.events : []
     var games = []
     for (var i = 0; i < events.length; i++) {

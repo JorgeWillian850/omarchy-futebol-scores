@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "meirdick.scores",
   "name": "Scores",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "author": "meirdick",
   "license": "MIT",
-  "description": "Live sports scores in the Omarchy bar: follow teams across the US majors, college and world soccer, with a keyboard-driven scoreboard, standings and optional alerts.",
+  "description": "Live football/soccer scores in the Omarchy bar: follow clubs and leagues, with a keyboard-driven scoreboard, standings and optional alerts.",
   "kinds": [
     "bar-widget"
   ],
@@ -18,17 +18,9 @@
     "category": "Sports",
     "aliases": [
       "scores",
-      "sports",
-      "scoreboard",
-      "nfl",
-      "nba",
-      "mlb",
-      "nhl",
+      "futebol",
       "soccer",
-      "f1",
-      "lemans",
-      "wec",
-      "imsa"
+      "football"
     ],
     "allowMultiple": false,
     "defaultSection": "right",
@@ -49,7 +41,7 @@
       "closeClockSec": 300,
       "providerChain": "",
       "espnHost": "",
-      "followedLeagues": "",
+      "followedLeagues": "eng.1,esp.1,ger.1,ita.1,fra.1,bra.1,ucl,uel,wc,wwc,mls,mex.1,arg.1,ned.1,ned.2,sco.1,ger.2,esp.2,tur.1,bel.1,sui.1,swe.1,nor.1,nor.2,den.1,aut.1,cze.1,cyp.1,per.1,chi.1,ksa.1",
       "notifyLeagues": false
     },
     "schema": [
@@ -57,15 +49,15 @@
         "key": "followedTeams",
         "type": "string",
         "label": "Followed teams",
-        "description": "Comma-separated league:ABBR pairs, e.g. \"mlb:BOS, nfl:NYJ, eng.1:ARS\". Easier to set from the panel: press / to search and f to follow.",
+        "description": "Comma-separated league:ABBR pairs, e.g. \"eng.1:ARS\". Easier to set from the panel: press / to search and f to follow.",
         "defaultValue": ""
       },
       {
         "key": "followedLeagues",
         "type": "string",
         "label": "Followed leagues",
-        "description": "Comma-separated league slugs, e.g. \"nfl, eng.1\". A followed league is polled and all its games count as yours. Easier to set from the panel: press L, then f on a league. Any ESPN slug works, including ones not in the built-in list.",
-        "defaultValue": ""
+        "description": "Comma-separated league slugs, e.g. \"eng.1, bra.1\". A followed league is polled and all its games count as yours. Easier to set from the panel: press L, then f on a league. Any ESPN soccer slug works, including ones not in the built-in list.",
+        "defaultValue": "eng.1,esp.1,ger.1,ita.1,fra.1,bra.1,ucl,uel,wc,wwc,mls,mex.1,arg.1,ned.1,ned.2,sco.1,ger.2,esp.2,tur.1,bel.1,sui.1,swe.1,nor.1,nor.2,den.1,aut.1,cze.1,cyp.1,per.1,chi.1,ksa.1"
       },
       {
         "key": "livePollSec",

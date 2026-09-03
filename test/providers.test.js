@@ -54,9 +54,9 @@ check("empty does not throw", P.espn.parseScoreboard("", "mlb", now).ok === fals
 check("null does not throw", P.espn.parseScoreboard(null, "mlb", now).ok === false)
 
 console.log("\nurls:")
-console.log("  ", P.espn.scoreboardUrl("mlb", new Date()))
-console.log("  ", P.espn.standingsUrl("mlb"))
-console.log("  ", P.espn.summaryUrl("mlb", "401816563"))
+console.log("  ", P.espn.scoreboardUrl("eng.1", new Date()))
+console.log("  ", P.espn.standingsUrl("eng.1"))
+console.log("  ", P.espn.summaryUrl("eng.1", "401816563"))
 console.log("  ", P.mlb.scoreboardUrl("mlb", new Date()))
 console.log("  ", P.nhl.scoreboardUrl("nhl", new Date()))
 check("unknown league yields no url", P.espn.scoreboardUrl("!!", new Date()) === "")

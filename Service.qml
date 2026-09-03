@@ -130,7 +130,7 @@ Item {
   readonly property var follows: Model.normalizeFollows(
     pendingTeams !== null ? pendingTeams : setting("followedTeams", ""))
   readonly property var followedLeagues: Model.normalizeLeagues(
-    pendingLeagues !== null ? pendingLeagues : setting("followedLeagues", ""))
+    pendingLeagues !== null ? pendingLeagues : setting("followedLeagues", Leagues.DEFAULT_FOLLOWED_LEAGUES))
 
   // Drop the optimistic value once the file says the same thing.
   function settlePending() {
