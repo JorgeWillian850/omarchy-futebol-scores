@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "id": "jorge.futebol-scores",
-  "name": "Futebol Scores",
-  "version": "1.0.0",
-  "author": "jorgewillian",
+  "id": "meirdick.scores",
+  "name": "Scores",
+  "version": "1.6.1",
+  "author": "meirdick",
   "license": "MIT",
-  "description": "Placares de futebol na barra do Omarchy: ligas europeias, brasileiras e internacionais, com alertas opcionais.",
+  "description": "Live sports scores in the Omarchy bar: follow teams across the US majors, college and world soccer, with a keyboard-driven scoreboard, standings and optional alerts.",
   "kinds": [
     "bar-widget"
   ],
@@ -13,57 +13,65 @@
     "barWidget": "Widget.qml"
   },
   "barWidget": {
-    "displayName": "Futebol",
-    "description": "Placar ao vivo e contagem para o próximo jogo das ligas de futebol que você segue.",
+    "displayName": "Scores",
+    "description": "Live score and clock for the teams you follow, a next-game countdown when nothing is on, and a panel with today's games, league scoreboards, standings and per-game detail.",
     "category": "Sports",
     "aliases": [
-      "futebol",
-      "soccer",
       "scores",
-      "football",
-      "placar"
+      "sports",
+      "scoreboard",
+      "nfl",
+      "nba",
+      "mlb",
+      "nhl",
+      "soccer",
+      "f1",
+      "lemans",
+      "wec",
+      "imsa"
     ],
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
       "followedTeams": "",
-      "followedLeagues": "eng.1,esp.1,ger.1,ita.1,fra.1,bra.1,mls,mex.1,ned.1",
       "livePollSec": 25,
       "idlePollSec": 900,
       "barFormat": "full",
       "rotateSec": 6,
-      "showSituation": false,
+      "showSituation": true,
       "showAllGames": false,
       "finalWindowHours": 8,
-      "notifyStart": true,
-      "notifyScore": true,
+      "notifyStart": false,
+      "notifyScore": false,
       "notifyFinal": false,
       "notifyClose": false,
-      "notifyLeagues": true,
       "closeMargin": 1,
       "closeClockSec": 300,
       "providerChain": "",
-      "espnHost": ""
+      "espnHost": "",
+      "followedLeagues": "",
+      "notifyLeagues": false
     },
     "schema": [
       {
         "key": "followedTeams",
         "type": "string",
-        "label": "Times seguidos",
-        "description": "Ex: eng.1:ARS, bra.1:FLA",
+        "label": "Followed teams",
+        "description": "Comma-separated league:ABBR pairs, e.g. \"mlb:BOS, nfl:NYJ, eng.1:ARS\". Easier to set from the panel: press / to search and f to follow.",
         "defaultValue": ""
       },
       {
         "key": "followedLeagues",
         "type": "string",
-        "label": "Ligas seguidas",
-        "description": "Ex: eng.1, esp.1, bra.1",
+        "label": "Followed leagues",
+        "description": "Comma-separated league slugs, e.g. \"nfl, eng.1\". A followed league is polled and all its games count as yours. Easier to set from the panel: press L, then f on a league. Any ESPN slug works, including ones not in the built-in list.",
         "defaultValue": ""
       },
       {
         "key": "livePollSec",
         "type": "integer",
-        "label": "Atualização ao vivo (segundos)",
+        "label": "Live refresh (seconds)",
+        "description": "How often scores refresh while a followed game is in progress. ESPN advertises a 3-second cache, so anything above that is polite; below 15 buys very little.",
         "min": 10,
         "max": 300,
         "step": 5,
@@ -72,29 +80,127 @@
       {
         "key": "idlePollSec",
         "type": "integer",
-        "label": "Atualização ociosa (segundos)",
+        "label": "Idle refresh (seconds)",
+        "description": "Floor for the refresh rate when nothing you follow is playing. The widget backs off to an hour when no followed team plays today.",
         "min": 60,
         "max": 7200,
         "step": 60,
         "defaultValue": 900
       },
       {
+        "key": "barFormat",
+        "type": "enum",
+        "label": "Bar format",
+        "description": "How much fits in the bar. \"compact\" drops the game clock; \"icon\" shows only the glyph and keeps everything in the panel.",
+        "options": [
+          "full",
+          "compact",
+          "icon"
+        ],
+        "defaultValue": "full"
+      },
+      {
+        "key": "rotateSec",
+        "type": "integer",
+        "label": "Rotate between live games (seconds)",
+        "description": "When several followed games are live at once, how long each one holds the bar.",
+        "min": 3,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 6
+      },
+      {
+        "key": "showSituation",
+        "type": "boolean",
+        "label": "Show the in-game situation",
+        "description": "Count, outs and runners for baseball; down and distance for football. Shown in the panel, never in the bar.",
+        "defaultValue": true
+      },
+      {
+        "key": "showAllGames",
+        "type": "boolean",
+        "label": "Show every game in polled leagues",
+        "description": "Adds an \"Also today\" section holding games from leagues that are only being polled because you follow a team in them. Off by default: following a club shows that club, not its whole division.",
+        "defaultValue": false
+      },
+      {
+        "key": "finalWindowHours",
+        "type": "integer",
+        "label": "Keep finals in the bar for (hours)",
+        "description": "How long a finished game keeps the bar slot before it reverts to the next-game countdown.",
+        "min": 0,
+        "max": 48,
+        "step": 1,
+        "defaultValue": 8
+      },
+      {
         "key": "notifyStart",
         "type": "boolean",
-        "label": "Avisar no apito inicial",
-        "defaultValue": true
+        "label": "Notify when a followed game starts",
+        "description": "Off by default. Every alert here is opt-in.",
+        "defaultValue": false
       },
       {
         "key": "notifyScore",
         "type": "boolean",
-        "label": "Avisar a cada gol",
-        "defaultValue": true
+        "label": "Notify on every score",
+        "description": "Fires for either team in a followed game. The loudest option here \u2014 a high-scoring basketball game will notify dozens of times.",
+        "defaultValue": false
+      },
+      {
+        "key": "notifyFinal",
+        "type": "boolean",
+        "label": "Notify on the final score",
+        "description": "One notification per followed game. The quietest useful setting.",
+        "defaultValue": false
+      },
+      {
+        "key": "notifyClose",
+        "type": "boolean",
+        "label": "Notify when a followed game gets close late",
+        "description": "Fires once per game when the margin is within the threshold below and the game is in its last period.",
+        "defaultValue": false
       },
       {
         "key": "notifyLeagues",
         "type": "boolean",
-        "label": "Avisar para ligas seguidas",
-        "defaultValue": true
+        "label": "Also notify for followed leagues",
+        "description": "By default only your followed teams raise notifications. Turn this on to alert for every game in a league you follow as well \u2014 loud, in proportion to how big the league is.",
+        "defaultValue": false
+      },
+      {
+        "key": "closeMargin",
+        "type": "integer",
+        "label": "Close-game margin",
+        "description": "Score difference that counts as close. 1 suits baseball, hockey and soccer; raise it to about 6 for football or basketball.",
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "defaultValue": 1
+      },
+      {
+        "key": "closeClockSec",
+        "type": "integer",
+        "label": "Close-game clock (seconds)",
+        "description": "Only treat a game as close once its clock is under this. Ignored for sports without a running clock, such as baseball.",
+        "min": 30,
+        "max": 1800,
+        "step": 30,
+        "defaultValue": 300
+      },
+      {
+        "key": "providerChain",
+        "type": "string",
+        "label": "Provider chain override",
+        "description": "JSON mapping a league to the providers to try in order, e.g. {\"mlb\":[\"mlb\",\"espn\"]}. Providers are \"espn\" (all leagues), \"mlb\" (statsapi.mlb.com), \"nhl\" (api-web.nhle.com) and \"fotmob\" (fotmob.com fallback for soccer). Leave empty for ESPN first everywhere.",
+        "defaultValue": ""
+      },
+      {
+        "key": "espnHost",
+        "type": "string",
+        "label": "ESPN host override",
+        "description": "Escape hatch for the day ESPN moves. Empty means https://site.web.api.espn.com. Do not point this at a host that requires a browser User-Agent.",
+        "defaultValue": ""
       }
     ]
   }

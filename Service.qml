@@ -47,7 +47,7 @@ Item {
     onLoadFailed: root.fileSettings = ({})
   }
 
-  readonly property string moduleId: "jorge.futebol-scores"
+  readonly property string moduleId: "meirdick.scores"
 
   // --- results -------------------------------------------------------------
   // league slug -> array of normalized Game. Kept per league so one league
@@ -259,7 +259,7 @@ Item {
     stdout: StdioCollector { id: reqOut; waitForEnd: true }
     stderr: StdioCollector { id: reqErr; waitForEnd: true }
 
-    function send(url, etagPath, onDone) {
+    function send(url, etagPath, onDone, headers) {
       if (req.busy) return false
       req.busy = true
       req.handler = onDone
@@ -271,6 +271,10 @@ Item {
       // browser-shaped User-Agents and 200s curl's own. Setting one to "look
       // like a browser" is the classic way to break this plugin.
       var command = ["curl", "-fsSL", "--compressed", "--max-time", "12"]
+      if (headers && headers.length > 0) {
+        for (var h = 0; h < headers.length; h++)
+          command.push("-H", headers[h])
+      }
       if (etagPath !== "") {
         command.push("--etag-compare", etagPath)
         command.push("--etag-save", etagPath)
@@ -324,11 +328,11 @@ Item {
       var next = root.queue.slice()
       var job = next.shift()
       root.queue = next
-      root.pool[i].send(job.url, job.etagPath, job.done)
+      root.pool[i].send(job.url, job.etagPath, job.done, job.headers)
     }
   }
 
-  readonly property string cacheDir: Quickshell.env("HOME") + "/.cache/omarchy/jorge.futebol-scores"
+  readonly property string cacheDir: Quickshell.env("HOME") + "/.cache/omarchy/meirdick.scores"
 
   // curl writes the ETag here and compares against it on the next request; a
   // 304 then comes back as an empty body, which costs nothing to receive.
@@ -641,11 +645,14 @@ Item {
     var url = provider ? provider.scoreboardUrl(league, date, providerName === "espn" && root.espnHost !== "" ? root.espnHost : undefined) : ""
     if (url === "") { fetchLeagueVia(league, date, chain, index + 1, forBrowse); return }
 
+    var headers = provider && provider.requestHeaders ? provider.requestHeaders() : []
+
     // The ETag is per league, per provider and per date — sharing one across
     // dates would serve yesterday's card as "unchanged".
     enqueue({
       url: url,
       etagPath: root.etagPathFor(url),
+      headers: headers,
       done: function(exitCode, body, error) {
         if (exitCode !== 0) {
           if (index + 1 < chain.length) { fetchLeagueVia(league, date, chain, index + 1, forBrowse); return }
@@ -657,17 +664,31 @@ Item {
         // Empty body with a clean exit is curl reporting 304 Not Modified.
         // Keep what we already have; it is by definition current.
         var bucket = forBrowse ? root.browseByLeague : root.gamesByLeague
-        if (String(body).trim() === "" && bucket[league] !== undefined) {
-          finishLeague()
-          return
+        var bodyToParse = body
+        if (String(body).trim() === "") {
+          if (providerName === "fotmob")
+            bodyToParse = Providers.cachedFotmobBody(date)
+          if (String(bodyToParse).trim() === "" && bucket[league] !== undefined) {
+            finishLeague()
+            return
+          }
         }
 
-        var parsed = provider.parseScoreboard(body, league, Date.now())
+        var parsed = provider.parseScoreboard(bodyToParse, league, Date.now())
+        if (parsed.ok && providerName === "fotmob" && String(body).trim() !== "")
+          Providers.cacheFotmobBody(date, body)
         if (parsed.ok) root.lastError = ""
         if (!parsed.ok) {
           if (index + 1 < chain.length) { fetchLeagueVia(league, date, chain, index + 1, forBrowse); return }
           root.lastError = Leagues.displayName(league) + ": " + parsed.error
           finishLeague()
+          return
+        }
+
+        // ESPN often returns an empty card for leagues it does not cover on a
+        // given day; fall through to Fotmob rather than showing nothing.
+        if (parsed.games.length === 0 && index + 1 < chain.length) {
+          fetchLeagueVia(league, date, chain, index + 1, forBrowse)
           return
         }
 
@@ -991,7 +1012,7 @@ Item {
     mkCache.running = true
   }
 
-  // Machine-readable state for `omarchy-shell jorge.futebol-scores diagnose`. QML
+  // Machine-readable state for `omarchy-shell meirdick.scores diagnose`. QML
   // load failures and bad settings are both silent on screen, so this is the
   // only practical way to see what the widget thinks is true.
   function diagnose() {

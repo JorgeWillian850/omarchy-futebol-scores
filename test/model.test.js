@@ -240,8 +240,16 @@ check("no section names another league's spillover",
 
 var withLeague = M.buildRows({ route: "", games: mlb, follows: ["mlb:" + liveHome], followedLeagues: ["mlb"], now: now })
 var leagueSection = withLeague.filter(function(r) { return r.kind === "section" && r.title === "MLB" })[0]
+var liveSection = withLeague.filter(function(r) { return r.kind === "section" && r.title === "Live" })[0]
 check("following the league adds a section named for it", leagueSection !== undefined)
-eq("holding every other game on the card", Number(leagueSection.meta), mlb.length - 1)
+var leagueOnly = mlb.filter(function(g) {
+  return g.home.abbr !== liveHome && g.away.abbr !== liveHome
+})
+var expectedLeagueRows = leagueOnly.filter(function(g) { return g.state !== "LIVE" }).length
+eq("league section holds only its non-live games", Number(leagueSection.meta), expectedLeagueRows)
+var expectedLiveRows = leagueOnly.filter(function(g) { return g.state === "LIVE" }).length +
+  (mlb.some(function(g) { return g.state === "LIVE" && (g.home.abbr === liveHome || g.away.abbr === liveHome) }) ? 1 : 0)
+eq("live games from a followed league surface at the top", Number(liveSection.meta), expectedLiveRows)
 // Your own club must not be duplicated into the league's section.
 var ids = {}, dupes = 0
 withLeague.filter(function(r) { return r.kind === "game" }).forEach(function(r) {

@@ -10,8 +10,8 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "jorge.futebol-scores"
-  ipcTarget: "jorge.futebol-scores"
+  moduleName: "meirdick.scores"
+  ipcTarget: "meirdick.scores"
   manageIpc: false
 
   property var anchorItem: null
@@ -293,6 +293,7 @@ Panel {
       return
     }
     if (row.kind === "action") {
+      if (row.action === "refresh") { if (service) service.refresh(); return }
       if (row.action === "leagues") { pushRoute("leagues"); return }
       if (row.action === "search") { startFiltering(true); return }
       if (row.action === "open") {
@@ -766,15 +767,30 @@ Panel {
   Component {
     id: sectionComponent
     RowBase {
-      implicitHeight: sectionLabel.implicitHeight + Style.space(26)
+      implicitHeight: Math.max(sectionCrest.visible ? sectionCrest.height : 0, sectionLabel.implicitHeight) + Style.space(26)
+
+      TeamCrest {
+        id: sectionCrest
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Style.space(3)
+        anchors.leftMargin: Style.space(4)
+        visible: row && String(row.league || "") !== ""
+        crestSize: Style.space(18)
+        source: row && row.league ? Leagues.logoFor(row.league) : ""
+        abbr: row && row.league ? Leagues.shortLabel(row.league) : ""
+        foreground: root.foreground
+        fontFamily: root.fontFamily
+      }
+
       PanelSectionHeader {
         id: sectionLabel
-        anchors.left: parent.left
+        anchors.left: sectionCrest.visible ? sectionCrest.right : parent.left
+        anchors.leftMargin: sectionCrest.visible ? Style.space(8) : Style.space(4)
         anchors.right: sectionCount.left
         anchors.rightMargin: Style.space(8)
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Style.space(3)
-        anchors.leftMargin: Style.space(4)
         text: row ? row.title : ""
         foreground: root.foreground
         fontFamily: root.fontFamily

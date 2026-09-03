@@ -700,17 +700,161 @@ function sortStandingRows(rows) {
   return rows
 }
 
+// ------------------------------------------------------------------ fotmob
+
+// Fallback for soccer leagues ESPN does not cover on a given day. Free, no
+// API key. One matches?date= response is shared across every league that day.
+var FOTMOB_HOST = "https://www.fotmob.com"
+var FOTMOB_IMAGE_HOST = "https://images.fotmob.com/image_resources/logo"
+var fotmobDayCache = { date: "", text: "" }
+
+function fotmobTeamLogoUrl(teamId) {
+  var id = toScore(teamId)
+  return id !== null ? FOTMOB_IMAGE_HOST + "/teamlogo/" + id + ".png" : ""
+}
+
+function fotmobLeagueLogoUrl(leagueId) {
+  var id = toScore(leagueId)
+  return id !== null ? FOTMOB_IMAGE_HOST + "/leaguelogo/" + id + ".png" : ""
+}
+
+function fotmobDate(date) {
+  var d = date || new Date()
+  var month = d.getMonth() + 1
+  var day = d.getDate()
+  return String(d.getFullYear()) + (month < 10 ? "0" : "") + month + (day < 10 ? "0" : "") + day
+}
+
+function cacheFotmobBody(date, text) {
+  var raw = String(text || "").trim()
+  if (raw === "") return
+  fotmobDayCache.date = fotmobDate(date)
+  fotmobDayCache.text = raw
+}
+
+function cachedFotmobBody(date) {
+  return fotmobDayCache.date === fotmobDate(date) ? fotmobDayCache.text : ""
+}
+
+function fotmobStateOf(status) {
+  if (!status) return "PRE"
+  if (status.finished) return "FINAL"
+  if (status.ongoing || status.started) return "LIVE"
+  if (status.cancelled) return "POSTPONED"
+  return "PRE"
+}
+
+function fotmobTeam(side) {
+  if (!side) return emptyTeam()
+  var name = String(side.name || side.longName || "")
+  var abbr = ""
+  if (name !== "") {
+    var words = name.split(/\s+/).filter(function(w) { return w !== "" })
+    abbr = words.length >= 2
+      ? (words[0].slice(0, 3) + words[1].slice(0, 1)).toUpperCase()
+      : name.slice(0, 3).toUpperCase()
+  }
+  return {
+    abbr: abbr,
+    name: name,
+    fullName: String(side.longName || side.name || ""),
+    id: String(side.id || ""),
+    score: toScore(side.score),
+    color: "", altColor: "",
+    logo: fotmobTeamLogoUrl(side.id),
+    record: "", lines: [],
+    winner: false
+  }
+}
+
+function fotmobGame(match, league, nowMs) {
+  if (!match) return null
+  var status = match.status || {}
+  var startMs = Date.parse(String(status.utcTime || ""))
+  if (!isFinite(startMs) && match.timeTS) startMs = match.timeTS
+
+  var home = fotmobTeam(match.home)
+  var away = fotmobTeam(match.away)
+  var state = fotmobStateOf(status)
+
+  var rawStatus = ""
+  if (state === "LIVE" && status.liveTime && status.liveTime.short)
+    rawStatus = String(status.liveTime.short)
+  else if (state === "FINAL")
+    rawStatus = "Final"
+  else
+    rawStatus = String(match.time || "")
+
+  return {
+    isEvent: false, leaders: [], sessionLabel: "",
+    id: "fotmob:" + String(match.id || ""),
+    eventId: String(match.id || ""),
+    provider: "fotmob",
+    league: league,
+    sport: "soccer",
+    name: away.abbr + " @ " + home.abbr,
+    startUtc: isFinite(startMs) ? startMs : 0,
+    state: state,
+    rawStatus: rawStatus,
+    statusDetail: rawStatus,
+    delayed: false,
+    period: null,
+    clock: state === "LIVE" && status.liveTime ? String(status.liveTime.short || "") : "",
+    home: home,
+    away: away,
+    situation: null,
+    venue: "",
+    detailUrl: "",
+    updatedAt: nowMs || 0
+  }
+}
+
+var fotmob = {
+  name: "fotmob",
+
+  scoreboardUrl: function(league, date) {
+    var meta = Leagues && Leagues.resolve(league)
+    if (!meta || !meta.fotmob || !meta.fotmob.id) return ""
+    return FOTMOB_HOST + "/api/data/matches?date=" + fotmobDate(date) + "&timezone=UTC"
+  },
+
+  parseScoreboard: function(text, league, nowMs) {
+    var data = parseJson(text)
+    if (!data) return { ok: false, games: [], error: "unparseable response" }
+    var meta = Leagues && Leagues.resolve(league)
+    var leagueId = meta && meta.fotmob ? meta.fotmob.id : 0
+    var leagues = Array.isArray(data.leagues) ? data.leagues : []
+    var matches = []
+    for (var i = 0; i < leagues.length; i++) {
+      var entry = leagues[i]
+      var pid = toScore(entry.primaryId)
+      var id = toScore(entry.id)
+      if (leagueId && pid !== leagueId && id !== leagueId) continue
+      var list = Array.isArray(entry.matches) ? entry.matches : []
+      for (var j = 0; j < list.length; j++) matches.push(list[j])
+    }
+    var games = []
+    for (var k = 0; k < matches.length; k++) {
+      var game = fotmobGame(matches[k], league, nowMs)
+      if (game) games.push(game)
+    }
+    return { ok: true, games: games, error: "" }
+  }
+}
+
 // ------------------------------------------------------------------ registry
 
-var REGISTRY = { espn: espn, mlb: mlb, nhl: nhl }
+var REGISTRY = { espn: espn, mlb: mlb, nhl: nhl, fotmob: fotmob }
 
 function get(name) { return REGISTRY[String(name)] || null }
 
 if (typeof module !== "undefined") {
   module.exports = {
-    espn: espn, mlb: mlb, nhl: nhl,
-    get: get, useLeagues: useLeagues, sortStandingRows: sortStandingRows,
-    espnDate: espnDate, isoDate: isoDate, toScore: toScore,
+    espn: espn, mlb: mlb, nhl: nhl, fotmob: fotmob,
+    get: get, useLeagues: useLeagues,
+    cacheFotmobBody: cacheFotmobBody, cachedFotmobBody: cachedFotmobBody,
+    sortStandingRows: sortStandingRows,
+    espnDate: espnDate, isoDate: isoDate, fotmobDate: fotmobDate, toScore: toScore,
     ESPN_HOST: ESPN_HOST, ESPN_ALT_HOST: ESPN_ALT_HOST, ESPN_CORE_HOST: ESPN_CORE_HOST
   }
 }

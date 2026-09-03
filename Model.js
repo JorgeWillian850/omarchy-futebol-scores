@@ -498,8 +498,11 @@ function pollIntervalSec(games, follows, nowMs, options) {
 // One flat list of rows over one ListView. The panel body is heterogeneous but
 // every row is a row, so cursor movement never has to know which section it is
 // in. `selectable: false` marks headers and notes.
-function section(title, meta) {
-  return { kind: "section", key: "section:" + title, selectable: false, title: title, meta: meta || "" }
+function section(title, meta, leagueSlug) {
+  return {
+    kind: "section", key: "section:" + (leagueSlug || title), selectable: false,
+    title: title, meta: meta || "", league: leagueSlug || ""
+  }
 }
 
 function note(text, key) {
@@ -582,16 +585,29 @@ function todayRows(state, set, nowMs, formatTime, filter, games, leagues) {
     } else other.push(game)
   }
 
-  function push(title, list) {
+  function push(title, list, leagueSlug) {
     if (list.length === 0) return
-    rows.push(section(title, String(list.length)))
+    rows.push(section(title, String(list.length), leagueSlug))
     for (var i = 0; i < list.length; i++)
       rows.push(gameRow(list[i], set, nowMs, formatTime, leagues))
   }
 
-  // Your clubs split live from the rest: a game in progress is the reason the
-  // panel is open, and it should not sit under last night's final.
-  push("Live", sortGames(mine.filter(function(g) { return g.state === "LIVE" })))
+  // Every live fixture you follow — club or whole league — belongs at the top.
+  // League sections keep a stable order below; without this a Czech game at the
+  // bottom of a long followed-leagues list is easy to miss.
+  var liveGames = [], liveIds = {}
+  function trackLive(game) {
+    if (game.state !== "LIVE" || liveIds[game.id]) return
+    liveIds[game.id] = true
+    liveGames.push(game)
+  }
+  for (var m = 0; m < mine.length; m++) trackLive(mine[m])
+  for (var slugKey in byLeague) {
+    var leagueList = byLeague[slugKey]
+    for (var k = 0; k < leagueList.length; k++) trackLive(leagueList[k])
+  }
+
+  push("Live", sortGames(liveGames))
   push("Your teams", sortGames(mine.filter(function(g) { return g.state !== "LIVE" })))
 
   // One section per followed competition, in the order they were listed, so
@@ -599,7 +615,8 @@ function todayRows(state, set, nowMs, formatTime, filter, games, leagues) {
   var followedLeagues = normalizeLeagues(state.followedLeagues)
   for (var j = 0; j < followedLeagues.length; j++) {
     var slug = followedLeagues[j]
-    push(displayLeague(slug), sortGames(byLeague[slug] || []))
+    var leagueGames = (byLeague[slug] || []).filter(function(g) { return g.state !== "LIVE" })
+    push(displayLeague(slug), sortGames(leagueGames), slug)
   }
 
   // Everything else in the leagues being polled. Off by default: those leagues
@@ -621,6 +638,8 @@ function todayRows(state, set, nowMs, formatTime, filter, games, leagues) {
   // legend, and the legend is the first thing nobody reads.
   var follow = [
     section("Follow", ""),
+    { kind: "action", key: "action:refresh", selectable: true, action: "refresh",
+      label: "Refresh scores", hint: "r" },
     // Search covers teams and leagues both, so this is one action. Browsing
     // the league list stays as its own row because it answers a different
     // question — "what is there?" rather than "where is this?".
